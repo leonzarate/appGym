@@ -20,3 +20,17 @@ class AlumnoResponse(AlumnoBase):
 
     class Config:
         from_attributes = True
+
+# Para crear y mostrar rutinas
+class RutinaBase(BaseModel):
+    nombre: str
+    descripcion: Optional[str] = None
+
+class RutinaCreate(RutinaBase):
+    pass
+
+class RutinaResponse(RutinaBase):
+    id: int
+
+    class Config:
+        from_attributes = True

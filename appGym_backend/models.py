@@ -10,3 +10,10 @@ class Alumno(Base):
     fecha_nacimiento = Column(Date, nullable=True) # Nuevo campo
     esta_activo = Column(Boolean, default=True)
     objetivo = Column(String, nullable=True)
+
+class Rutina(Base):
+    __tablename__ = "rutina"
+
+    id = Column(Integer, primary_key=True, index=True)
+    nombre = Column(String, nullable=False)
+    descripcion = Column(String, nullable=True)    

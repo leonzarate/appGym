@@ -24,3 +24,15 @@ def get_db():
         yield db
     finally:
         db.close()
+
+# Reset de la base de datos (para desarrollo)
+def reset_database():
+
+    # 2. Borrar todo lo existente
+    Base.metadata.drop_all(engine)
+    print("Tablas borradas.")
+
+    # 3. Crear las tablas desde cero
+    Base.metadata.create_all(engine)
+    print("Tablas creadas.")
+

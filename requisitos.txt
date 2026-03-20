@@ -1,0 +1,14 @@
+Funcionalidades
+Crear un ENUM de turno, que tendrá valores "manana" y "tarde"
+Crear un CRUD de tipoRutina, nombre de tabla: tipoRutina. Cada tipoRutina tiene: id y nombre.
+Crear un CRUD de alumno, nombre de tabla: alumno. Cada alumno tiene nombre, email, esta_activo, fecha de nacimiento, objetivo
+Crear un CRUD de profesor, nombre de tabla: profesor. Cada profesor tiene: id, nombre (string) y contacto (string). Nombre de tabla: profesor
+Crear un CRUD de actividad. Nombre de tabla: actividad. Cada actividad tiene: id, un nombre, un turno, publico (mixto, masculino o femenino), un profesor asignado de los disponibles en la tabla profesor, un horario de inicio y fin
+Crear un CRUD de ejercicio. Nombre de tabla: ejercicio. Cada ejercicio tiene un id, un nombre, profesor que lo editó, enlace a video explicativo, campo de texto libre para tips o zona de trabajo
+Crear un CRUD de rutina. Nombre de tabla: rutina. Una rutina tendrá un id, un nombre, tipo de rutina, lista de ejercicio, cantidad de series, cantidad de repeticiones, fecha desde, fecha hasta, booleano Vigente
+
+
+Es necesario contemplar roles en el sistema. Los roles iniciales serán alumno, profesor y administrador.
+El administrador podrá hacer todo dentro del sistema.
+El profesor puede hacer CRUD de alumnos, CRUD de ejercicios, CRUD de rutinas.
+El alumno podrá editar sus datos personales, ver sus objetivos y sus rutinas, tanto historicas como actual. También podrá modificar sus pesos en los ejercicios para medir el progreso de sus ejercicios.

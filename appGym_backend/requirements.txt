@@ -1,2 +1,3 @@
 pip install fastapi uvicorn python-dotenv
 pip install sqlalchemy psycopg2-binary
+pip install pydantic[email]

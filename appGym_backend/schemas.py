@@ -1,14 +1,21 @@
 from pydantic import BaseModel, EmailStr
+from datetime import date
 from typing import Optional
 
-# Lo que pedimos cuando alguien se registra
-class AlumnoCreate(BaseModel):
+# Base común
+class AlumnoBase(BaseModel):
     nombre: str
-    email: str # Si quieres validar que sea email real, usa EmailStr (requiere: pip install pydantic[email])
-    objetivo: Optional[str] = "Mantenimiento"
+    email: EmailStr
+    fecha_nacimiento: Optional[date] = None
+    esta_activo: Optional[bool] = True
+    objetivo: Optional[str] = None
 
-# Lo que devolvemos (incluye el ID que genera la base de datos)
-class AlumnoResponse(AlumnoCreate):
+# Para crear (hereda de Base)
+class AlumnoCreate(AlumnoBase):
+    pass
+
+# Para la respuesta del API (incluye el ID)
+class AlumnoResponse(AlumnoBase):
     id: int
 
     class Config:

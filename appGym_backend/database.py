@@ -9,7 +9,11 @@ load_dotenv()
 DATABASE_URL = os.getenv("DATABASE_URL")
 
 # Creamos el motor de la base de datos
-engine = create_engine(DATABASE_URL)
+engine = create_engine(
+    DATABASE_URL,
+    connect_args={"options": "-c statement_timeout=30000"}, # Opcional: timeout de 30s
+    pool_pre_ping=True # Verifica que la conexión esté viva antes de usarla
+)
 
 # Creamos una sesión (para hacer consultas)
 SessionLocal = sessionmaker(autocommit=False, autoflush=False, bind=engine)
@@ -25,14 +29,4 @@ def get_db():
     finally:
         db.close()
 
-# Reset de la base de datos (para desarrollo)
-def reset_database():
-
-    # 2. Borrar todo lo existente
-    Base.metadata.drop_all(engine)
-    print("Tablas borradas.")
-
-    # 3. Crear las tablas desde cero
-    Base.metadata.create_all(engine)
-    print("Tablas creadas.")
 

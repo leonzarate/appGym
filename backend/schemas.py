@@ -40,7 +40,7 @@ class EjercicioResponse(EjercicioBase):
         from_attributes = True
 
 # --- DETALLE DE EJERCICIO EN RUTINA (La clave del nuevo sistema) ---
-class EjercicioEnRutinaResponse(BaseModel):
+class EjercicioDetalleResponse(BaseModel):
     orden: int
     series: int
     repeticiones: int
@@ -56,13 +56,15 @@ class RutinaResponse(BaseModel):
     fecha_desde: date
     fecha_hasta: date
     tipo: Optional[TipoRutinaResponse] # Aquí se usa el esquema que faltaba
-    ejercicios_detalle: List[EjercicioEnRutinaResponse]
+    ejercicios: List[EjercicioDetalleResponse] = []
     class Config:
         from_attributes = True
 
 # --- ALUMNO ---
 class AlumnoBase(BaseModel):
     nombre: str
+    apellido: str
+    dni: str
     email: EmailStr
     objetivo: Optional[str] = None
     fecha_nacimiento: Optional[date] = None
@@ -76,6 +78,14 @@ class AlumnoResponse(AlumnoBase):
     rutinas: List[RutinaResponse] = [] # Incluye sus planes de entrenamiento
     class Config:
         from_attributes = True
+
+class AlumnoResponse2(BaseModel):
+    id: int
+    nombre: str
+    #rutinas: List[RutinaResponse] = [] # Incluye sus planes de entrenamiento
+    class Config:
+        from_attributes = True
+
 
 # --- ACTIVIDAD (Agenda Grupal) ---
 class ActividadBase(BaseModel):
@@ -106,6 +116,7 @@ class RutinaCreate(BaseModel):
     fecha_hasta: date
     vigente: bool = True
     ejercicios: List[EjercicioEnRutinaCreate]
+    alumno_id: int  # <--- AGREGADO: Obligatorio para saber de quién es
 
 class ActividadCreate(ActividadBase):
     pass

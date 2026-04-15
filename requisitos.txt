@@ -11,4 +11,4 @@ Crear un CRUD de rutina. Nombre de tabla: rutina. Una rutina tendrá un id, un n
 Es necesario contemplar roles en el sistema. Los roles iniciales serán alumno, profesor y administrador.
 El administrador podrá hacer todo dentro del sistema.
 El profesor puede hacer CRUD de alumnos, CRUD de ejercicios, CRUD de rutinas.
-El alumno podrá editar sus datos personales, ver sus objetivos y sus rutinas, tanto historicas como actual. También podrá modificar sus pesos en los ejercicios para medir el progreso de sus ejercicios.
+El alumno podrá editar sus datos personales, ver sus objetivos y sus rutinas historicas como actual. También podrá modificar sus pesos en los ejercicios para medir el progreso de sus ejercicios.

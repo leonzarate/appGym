@@ -1,0 +1,362 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DEL PELA - Panel de Control</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f4f7f6; }
+        .sidebar-list { height: 70vh; overflow-y: auto; }
+        .card-rutina { border-left: 5px solid #198754; }
+        .sticky-top-custom { top: 20px; }
+    </style>
+</head>
+<body>
+
+<nav class="navbar navbar-dark bg-dark mb-4">
+    <div class="container-fluid">
+        <span class="navbar-brand mb-0 h1">🏋️ DEL PELA</span>
+        <div class="d-flex gap-2">
+            <button class="btn btn-outline-light btn-sm" onclick="abrirModal('alumno')">+ Alumno</button>
+            <button class="btn btn-outline-light btn-sm" onclick="abrirModal('ejercicio')">+ Ejercicio</button>
+            <button class="btn btn-success btn-sm" onclick="abrirModal('rutina')">+ Crear Rutina</button>
+        </div>
+    </div>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <div class="col-md-4">
+            <div class="card shadow-sm mb-4">
+                <div class="card-body">
+                    <h5 class="card-title">Socios</h5>
+                    <input type="text" id="buscador" class="form-control mb-3" placeholder="Buscar por nombre..." onkeyup="filtrarAlumnos()">
+                    <div class="list-group sidebar-list" id="listaAlumnos">
+                        <div class="text-center text-muted">Cargando atletas...</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="col-md-8">
+            <div id="detalleAlumno" class="sticky-top-custom">
+                <div class="alert alert-info">Seleccioná un alumno de la izquierda para ver su plan de entrenamiento.</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="modalCrear" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content" id="contenidoModal">
+            </div>
+    </div>
+</div>
+
+<script>
+    const API_URL = "http://127.0.0.1:8000";
+    let todosLosAlumnos = [];
+
+    // 1. CARGAR ALUMNOS AL INICIAR
+    async function cargarAlumnos() {
+        try {
+            const res = await fetch(`${API_URL}/alumno/listado`); // Usamos tu nuevo endpoint ligero
+            todosLosAlumnos = await res.json();
+            renderizarLista(todosLosAlumnos);
+        } catch (e) {
+            console.error("Error cargando alumnos:", e);
+        }
+    }
+
+    // 2. RENDERIZAR LA LISTA
+    function renderizarLista(lista) {
+        const contenedor = document.getElementById('listaAlumnos');
+        contenedor.innerHTML = lista.map(a => `
+            <button class="list-group-item list-group-item-action d-flex justify-content-between align-items-center" 
+                    onclick="verDetalle(${a.id})">
+                ${a.nombre}
+                <span class="badge bg-primary rounded-pill">ID: ${a.id}</span>
+            </button>
+        `).join('');
+    }
+
+    // 3. FILTRAR POR NOMBRE (A medida que escribes)
+    function filtrarAlumnos() {
+        const busqueda = document.getElementById('buscador').value.toLowerCase();
+        const filtrados = todosLosAlumnos.filter(a => 
+            a.nombre.toLowerCase().includes(busqueda)
+        );
+        renderizarLista(filtrados);
+    }
+
+    // 4. VER DETALLE Y RUTINA AL COSTADO
+async function verDetalle(id) {
+    const contenedor = document.getElementById('detalleAlumno');
+    
+    // 1. Efecto de carga (para que se note el trabajo del sistema)
+    contenedor.innerHTML = `
+        <div class="d-flex justify-content-center py-5">
+            <div class="spinner-border text-success" style="width: 3rem; height: 3rem;" role="status"></div>
+        </div>`;
+    
+    try {
+        // 2. Pedimos los datos completos al backend
+        const res = await fetch(`${API_URL}/alumno/${id}`); 
+        const alumno = await res.json();
+        
+        // 3. Construimos el HTML de las Rutinas y sus Ejercicios
+        let htmlRutinas = "";
+
+        if (alumno.rutinas && alumno.rutinas.length > 0) {
+            htmlRutinas = alumno.rutinas.map(rutina => `
+                <div class="card mb-4 shadow-sm border-success">
+                    <div class="card-header bg-light d-flex justify-content-between align-items-center">
+                        <h5 class="mb-0 text-dark">📋 ${rutina.nombre}</h5>
+                        <span class="badge ${rutina.vigente ? 'bg-success' : 'bg-secondary'}">
+                            ${rutina.vigente ? 'Vigente' : 'Finalizada'}
+                        </span>
+                    </div>
+                    <div class="card-body">
+                        <p class="text-muted small">Periodo: ${rutina.fecha_desde} al ${rutina.fecha_hasta}</p>
+                        
+                        <table class="table table-hover mt-3">
+                            <thead class="table-dark">
+                                <tr>
+                                    <th>Ejercicio</th>
+                                    <th>Series</th>
+                                    <th>Reps</th>
+                                    <th>Orden</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                ${rutina.ejercicios.map(det => `
+                                    <tr>
+                                        <td><strong>${det.ejercicio.nombre}</strong></td>
+                                        <td>${det.series}</td>
+                                        <td>${det.repeticiones}</td>
+                                        <td><span class="badge bg-light text-dark border">${det.orden}º</span></td>
+                                    </tr>
+                                `).join('')}
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            `).join('');
+        } else {
+            htmlRutinas = `
+                <div class="text-center py-5 bg-light rounded border">
+                    <p class="text-muted">Este atleta todavía no tiene rutinas asignadas.</p>
+                    <button class="btn btn-sm btn-success" onclick="abrirModal('rutina')">Asignar Primera Rutina</button>
+                </div>`;
+        }
+
+        // 4. Inyectamos todo en el panel derecho
+        contenedor.innerHTML = `
+            <div class="card shadow border-0">
+                <div class="card-header bg-dark text-white p-3">
+                    <div class="d-flex justify-content-between align-items-center">
+                        <h3 class="mb-0">${alumno.nombre} ${alumno.apellido}</h3>
+                        <small>DNI: ${alumno.dni}</small>
+                    </div>
+                </div>
+                <div class="card-body p-4">
+                    <div class="mb-4">
+                        <h6 class="text-uppercase text-muted fw-bold small">Objetivo Personal</h6>
+                        <p class="lead">${alumno.objetivo || 'Mantenimiento General'}</p>
+                    </div>
+                    <hr>
+                    <h5 class="mb-3">Planes de Entrenamiento</h5>
+                    ${htmlRutinas}
+                </div>
+            </div>
+        `;
+    } catch (e) {
+        console.error(e);
+        contenedor.innerHTML = `<div class="alert alert-danger">Error al conectar con el servidor de DEL PELA.</div>`;
+    }
+}
+// --- LÓGICA DE MODALES ---
+
+async function abrirModal(tipo) {
+    const contenido = document.getElementById('contenidoModal');
+    const modalBootstrap = new bootstrap.Modal(document.getElementById('modalCrear'));
+
+    if (tipo === 'ejercicio') {
+        contenido.innerHTML = `
+            <div class="modal-header bg-dark text-white">
+                <h5 class="modal-title">Nuevo Ejercicio</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="formEjercicio">
+                    <div class="mb-3">
+                        <label class="form-label">Nombre del Ejercicio</label>
+                        <input type="text" class="form-control" id="ej_nombre" placeholder="Ej: Press de Banca" required>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label">Descripción / Tips</label>
+                        <textarea class="form-control" id="ej_descripcion" rows="2"></textarea>
+                    </div>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                <button type="button" class="btn btn-success" onclick="guardarEjercicio()">Guardar Ejercicio</button>
+            </div>
+        `;
+    } 
+
+    else if (tipo === 'rutina') {
+        // Traemos datos necesarios para los selects
+        const [resAlumnos, resEjercicios] = await Promise.all([
+            fetch(`${API_URL}/alumno/listado`),
+            fetch(`${API_URL}/ejercicio`)
+        ]);
+        const alumnos = await resAlumnos.json();
+        const ejerciciosBase = await resEjercicios.json();
+
+        contenido.innerHTML = `
+            <div class="modal-header bg-success text-white">
+                <h5 class="modal-title">Configurar Nueva Rutina</h5>
+                <button type="button" class="btn-close btn-close-white" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" style="max-height: 70vh; overflow-y: auto;">
+                <form id="formRutina">
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Nombre de la Rutina</label>
+                            <input type="text" class="form-control" id="rut_nombre" placeholder="Ej: Pecho y Triceps" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Alumno</label>
+                            <select class="form-select" id="rut_alumno" required>
+                                ${alumnos.map(a => `<option value="${a.id}">${a.nombre}</option>`).join('')}
+                            </select>
+                        </div>
+                    </div>
+                    <div class="row mb-3">
+                        <div class="col">
+                            <label class="form-label">Desde</label>
+                            <input type="date" class="form-control" id="rut_desde" required>
+                        </div>
+                        <div class="col">
+                            <label class="form-label">Hasta</label>
+                            <input type="date" class="form-control" id="rut_hasta" required>
+                        </div>
+                    </div>
+
+                    <hr>
+                    <h6>Ejercicios del Plan</h6>
+                    <div id="listaEjerciciosRutina">
+                        </div>
+                    <button type="button" class="btn btn-sm btn-outline-primary mt-2" onclick="agregarFilaEjercicio()">
+                        + Añadir Ejercicio
+                    </button>
+                </form>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" class="btn btn-success" onclick="guardarRutina()">Crear Rutina</button>
+            </div>
+        `;
+        // Guardamos los ejercicios base en una variable global temporal para las filas
+        window.ejerciciosDisponibles = ejerciciosBase;
+    }
+    
+    modalBootstrap.show();
+}
+
+// --- AUXILIARES PARA RUTINA ---
+
+function agregarFilaEjercicio() {
+    const container = document.getElementById('listaEjerciciosRutina');
+    const index = container.children.length;
+    const div = document.createElement('div');
+    div.className = "row g-2 mb-2 align-items-end fila-ejercicio";
+    div.innerHTML = `
+        <div class="col-md-5">
+            <label class="small text-muted">Ejercicio</label>
+            <select class="form-select form-select-sm sel-ej" required>
+                ${window.ejerciciosDisponibles.map(e => `<option value="${e.id}">${e.nombre}</option>`).join('')}
+            </select>
+        </div>
+        <div class="col-md-2">
+            <label class="small text-muted">Series</label>
+            <input type="number" class="form-control form-select-sm inp-ser" value="3">
+        </div>
+        <div class="col-md-2">
+            <label class="small text-muted">Reps</label>
+            <input type="text" class="form-control form-select-sm inp-rep" value="12">
+        </div>
+        <div class="col-md-2">
+            <label class="small text-muted">Orden</label>
+            <input type="number" class="form-control form-select-sm inp-ord" value="${index + 1}">
+        </div>
+        <div class="col-md-1">
+            <button class="btn btn-sm btn-danger" onclick="this.parentElement.parentElement.remove()">X</button>
+        </div>
+    `;
+    container.appendChild(div);
+}
+
+// --- PETICIONES POST AL BACKEND ---
+
+async function guardarEjercicio() {
+    const data = {
+        nombre: document.getElementById('ej_nombre').value,
+        descripcion: document.getElementById('ej_descripcion').value
+    };
+
+    const res = await fetch(`${API_URL}/ejercicio`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("¡Ejercicio cargado! Giovanni ya lo puso en el estante.");
+        location.reload();
+    }
+}
+
+async function guardarRutina() {
+    const filas = document.querySelectorAll('.fila-ejercicio');
+    const ejerciciosParaEnviar = Array.from(filas).map(f => ({
+        ejercicio_id: parseInt(f.querySelector('.sel-ej').value),
+        series: parseInt(f.querySelector('.inp-ser').value),
+        repeticiones: f.querySelector('.inp-rep').value,
+        orden: parseInt(f.querySelector('.inp-ord').value)
+    }));
+
+    const data = {
+        nombre: document.getElementById('rut_nombre').value,
+        alumno_id: parseInt(document.getElementById('rut_alumno').value),
+        tipo_rutina_id: 1, // Por ahora fijo, podrías agregar un select de tipos
+        fecha_desde: document.getElementById('rut_desde').value,
+        fecha_hasta: document.getElementById('rut_hasta').value,
+        vigente: true,
+        ejercicios: ejerciciosParaEnviar
+    };
+
+    const res = await fetch(`${API_URL}/rutina`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    });
+
+    if (res.ok) {
+        alert("¡Rutina creada con éxito! Enzo ya puede empezar a sudar.");
+        location.reload();
+    } else {
+        const err = await res.json();
+        alert("Error: " + JSON.stringify(err.detail));
+    }
+}
+    // Iniciar
+    cargarAlumnos();
+</script>
+
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+</html>

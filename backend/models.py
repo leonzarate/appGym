@@ -1,7 +1,7 @@
 from sqlalchemy import Column, Integer, String, Boolean, Date, ForeignKey, Enum, Time, Table
 from sqlalchemy.orm import relationship
 import enum
-from database import Base
+from backend.database import Base
 
 # --- TABLA INTERMEDIA ALUMNO-RUTINA (Sigue siendo simple) ---
 alumno_rutina = Table(
@@ -53,6 +53,8 @@ class Alumno(Base):
     __tablename__ = "alumno"
     id = Column(Integer, primary_key=True, index=True)
     nombre = Column(String, nullable=False)
+    apellido = Column(String, nullable=False)
+    dni = Column(String, unique=True, index=True, nullable=False)
     email = Column(String, unique=True, index=True, nullable=False)
     fecha_nacimiento = Column(Date)
     esta_activo = Column(Boolean, default=True)
@@ -80,7 +82,9 @@ class Rutina(Base):
     tipo = relationship("TipoRutina", back_populates="rutinas")
     alumnos = relationship("Alumno", secondary=alumno_rutina, back_populates="rutinas")
     # RELACIÓN CLAVE: apunta a la clase RutinaEjercicio
-    ejercicios_detalle = relationship("RutinaEjercicio", cascade="all, delete-orphan")
+    ejercicios = relationship("RutinaEjercicio", cascade="all, delete-orphan")
+    alumno_id = Column(Integer, ForeignKey("alumno.id")) # Debe coincidir con el nombre de tabla 'alumnos'
+
 
 class Actividad(Base):
     __tablename__ = "actividad"

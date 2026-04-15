@@ -1,0 +1,202 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gym Admin - Panel Pro</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body {
+            background-color: #f4f7f6;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .main-row {
+            height: 100vh;
+        }
+
+        .sidebar {
+            overflow-y: auto;
+            background: white;
+            border-right: 1px solid #ddd;
+        }
+
+        .detail-view {
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .alumno-card {
+            cursor: pointer;
+            transition: 0.3s;
+            border-radius: 8px;
+            border: 1px solid #eee;
+        }
+
+        .alumno-card:hover {
+            background-color: #f8f9fa;
+            border-color: #0d6efd;
+        }
+
+        .alumno-card.active {
+            background-color: #0d6efd;
+            color: white;
+            border-color: #0d6efd;
+        }
+
+        .ejercicio-num {
+            width: 40px;
+            height: 40px;
+            background: #0d6efd;
+            color: white;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+    </style>
+</head>
+
+<body>
+
+    <div class="container-fluid">
+        <div class="row main-row">
+            <div class="col-md-4 sidebar p-4">
+                <h3 class="fw-bold mb-4">🏋️ Alumnos</h3>
+                <span id="contador-alumnos" class="badge bg-secondary rounded-pill">0</span>
+
+                <div class="mb-4">
+                    <input type="text" id="buscador-alumno" class="form-control shadow-sm"
+                        placeholder="🔍 Buscar por nombre..." oninput="filtrarAlumnos()">
+                </div>
+
+                <div id="lista-alumnos" class="d-flex flex-column gap-2">
+                </div>
+            </div>
+
+            <div class="col-md-8 detail-view p-5">
+                <div id="placeholder-detalle" class="text-center mt-5">
+                    <h4 class="text-muted">Selecciona un alumno para ver su plan de hoy</h4>
+                </div>
+
+                <div id="contenido-detalle" style="display: none;">
+                    <div class="d-flex justify-content-between align-items-center mb-4">
+                        <h1 id="user-nombre" class="display-5 fw-bold text-dark"></h1>
+                        <span class="badge bg-success p-2 px-3">En Entrenamiento</span>
+                    </div>
+                    <p id="user-objetivo" class="lead text-secondary"></p>
+                    <hr>
+
+                    <div id="rutina-container" class="mt-4">
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_URL = "http://127.0.0.1:8000";
+        let alumnosGlobal = []; // Usaremos esta variable para guardar la "foto" inicial de la DB
+
+        async function init() {
+            try {
+                const res = await fetch(`${API_URL}/alumno`);
+                // Guardamos los datos en nuestra variable global
+                alumnosGlobal = await res.json();
+
+                // Renderizamos la lista completa al inicio
+                renderLista(alumnosGlobal);
+                console.log("Alumnos cargados:", alumnosGlobal);
+            } catch (e) {
+                console.error("Error al cargar:", e);
+                document.getElementById('lista-alumnos').innerHTML = "⚠️ Error de conexión";
+            }
+        }
+
+        // Esta función es la encargada de "dibujar" cualquier lista de alumnos que le pasemos
+        function renderLista(listaParaMostrar) {
+            const container = document.getElementById('lista-alumnos');
+            const contador = document.getElementById('contador-alumnos'); // Capturamos el contador
+
+            // Actualizamos el número en el badge
+            contador.innerText = listaParaMostrar ? listaParaMostrar.length : 0;
+
+            if (!listaParaMostrar || listaParaMostrar.length === 0) {
+                container.innerHTML = '<div class="text-muted text-center mt-3 small">No se encontraron resultados...</div>';
+                return;
+            }
+
+            container.innerHTML = listaParaMostrar.map(al => `
+        <div class="alumno-card p-3 shadow-sm mb-2" id="card-${al.id}" onclick="verDetalle(${al.id})">
+            <div class="fw-bold">${al.nombre}</div>
+            <small class="opacity-75">🎯 ${al.objetivo || 'Fitness'}</small>
+        </div>
+    `).join('');
+        }
+
+        // Función que se activa cada vez que escribes en el input
+        function filtrarAlumnos() {
+            const input = document.getElementById('buscador-alumno');
+            const terminoBusqueda = input.value.toLowerCase().trim();
+
+            // Filtramos sobre la lista global original
+            const resultados = alumnosGlobal.filter(al =>
+                al.nombre.toLowerCase().includes(terminoBusqueda)
+            );
+
+            // Dibujamos los resultados filtrados
+            renderLista(resultados);
+        }
+
+        // Función para ver el detalle (se mantiene igual, usando la lista global)
+        function verDetalle(id) {
+            document.querySelectorAll('.alumno-card').forEach(c => c.classList.remove('active'));
+            const card = document.getElementById(`card-${id}`);
+            if (card) card.classList.add('active');
+
+            const al = alumnosGlobal.find(a => a.id === id);
+            if (!al) return;
+
+            const rutina = al.rutinas.find(r => r.vigente);
+
+            document.getElementById('placeholder-detalle').style.display = 'none';
+            document.getElementById('contenido-detalle').style.display = 'block';
+            document.getElementById('user-nombre').innerText = al.nombre;
+            document.getElementById('user-objetivo').innerText = `Objetivo: ${al.objetivo || 'No definido'}`;
+
+            const rContainer = document.getElementById('rutina-container');
+            if (rutina && rutina.ejercicios_detalle) {
+                const detalles = [...rutina.ejercicios_detalle].sort((a, b) => a.orden - b.orden);
+
+                rContainer.innerHTML = `
+            <h3 class="mb-4">📋 Rutina: ${rutina.nombre}</h3>
+            <div class="d-flex flex-column gap-3">
+                ${detalles.map(d => `
+                    <div class="card p-3 border-0 shadow-sm bg-light">
+                        <div class="d-flex align-items-center gap-3">
+                            <div class="ejercicio-num">${d.orden}</div>
+                            <div class="flex-grow-1">
+                                <h5 class="mb-0 fw-bold">${d.ejercicio.nombre}</h5>
+                                <span class="text-primary fw-bold small">${d.series} Series x ${d.repeticiones} Reps</span>
+                            </div>
+                            ${d.ejercicio.video_url ? `<a href="${d.ejercicio.video_url}" target="_blank" class="btn btn-sm btn-outline-danger">🎥 Video</a>` : ''}
+                        </div>
+                        <p class="mt-2 mb-0 text-muted small">${d.ejercicio.tips || ''}</p>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+            } else {
+                rContainer.innerHTML = `<div class="alert alert-info">Este alumno no tiene rutinas vigentes.</div>`;
+            }
+        }
+
+        // Arrancamos la App
+        window.onload = init;
+    </script>
+</body>
+
+</html>
